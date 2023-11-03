@@ -1,7 +1,10 @@
 <?php
+
 namespace app\controller;
 
 use app\BaseController;
+use GeoIp2\Database\Reader;
+use think\facade\Env;
 
 class Index extends BaseController
 {
@@ -13,5 +16,40 @@ class Index extends BaseController
     public function hello($name = 'ThinkPHP6')
     {
         return 'hello,' . $name;
+    }
+
+    public function ip($ip = '127.0.0.1')
+    {
+        $databaseFile = '../extend/geoip/GeoLite2-City.mmdb';
+        $reader = new Reader($databaseFile);
+        $ipAddress = $ip;
+
+        try {
+            // 查询 IP 地理位置信息
+            $record = $reader->city($ipAddress);
+        } catch (\Exception $e) {
+            // 处理找不到地理位置信息的情况
+            return json([
+                'code' => 1,
+                'msg' => 'error',
+                'data' => [
+                    'ip' => $ipAddress,
+                    'country' => '未知',
+                    'province' => '未知',
+                    'city' => '未知',
+                ]
+            ]);
+        }
+
+        return json([
+            'code' => 0,
+            'msg' => 'success',
+            'data' => [
+                'ip' => $ipAddress,
+                'country' => $record->country->name,
+                'province' => $record->mostSpecificSubdivision->name,
+                'city' => $record->city->name,
+            ]
+        ]);
     }
 }
